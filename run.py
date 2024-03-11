@@ -65,11 +65,53 @@ vintage_wide = vintage.pivot(index='open_month', columns='month_on_book', values
 # plt.ylabel('Cumulative % > 60 Days Past Due')
 # plt.savefig('vintage_analysis.png')
 
-lst = []
-for i in range(0, 61):
-    ratio = len(pivot_tb[pivot_tb['window'] < i]) / len(set(pivot_tb['ID']))
-    lst.append(ratio)
-pd.Series(lst).plot(legend=False, grid=True, title=' ')
-plt.xlabel('Observe Window')
-plt.ylabel('account ratio')
-plt.savefig('account_ratio.png')
+# lst = []
+# for i in range(0, 61):
+#     ratio = len(pivot_tb[pivot_tb['window'] < i]) / len(set(pivot_tb['ID']))
+#     lst.append(ratio)
+# pd.Series(lst).plot(legend=False, grid=True, title=' ')
+# plt.xlabel('Observe Window')
+# plt.ylabel('account ratio')
+# plt.savefig('account_ratio.png')
+
+def calculate_observe(credit, command):
+    id_sum = len(set(pivot_tb['ID']))
+    credit['status'] = 0
+    exec(command)
+    credit['month_on_book'] = credit['MONTHS_BALANCE'] - credit['open_month']
+    minagg = credit[credit['status'] == 1].groupby('ID')['month_on_book'].min()
+    minagg = pd.DataFrame(minagg)
+    minagg['ID'] = minagg.index
+    obslst = pd.DataFrame({'month_on_book':range(0,61), 'rate': None})
+    lst = []
+    for i in range(0,61):
+        due = list(minagg[minagg['month_on_book']  == i]['ID'])
+        lst.extend(due)
+        obslst.loc[obslst['month_on_book'] == i, 'rate'] = len(set(lst)) / id_sum 
+    return obslst['rate']
+
+command = "credit.loc[(credit['STATUS'] == '0') | (credit['STATUS'] == '1') | (credit['STATUS'] == '2') | (credit['STATUS'] == '3' )| (credit['STATUS'] == '4' )| (credit['STATUS'] == '5'), 'status'] = 1"   
+morethan1 = calculate_observe(credit, command)
+command = "credit.loc[(credit['STATUS'] == '1') | (credit['STATUS'] == '2') | (credit['STATUS'] == '3' )| (credit['STATUS'] == '4' )| (credit['STATUS'] == '5'), 'status'] = 1"   
+morethan30 = calculate_observe(credit, command)
+command = "credit.loc[(credit['STATUS'] == '2') | (credit['STATUS'] == '3' )| (credit['STATUS'] == '4' )| (credit['STATUS'] == '5'), 'status'] = 1"
+morethan60 = calculate_observe(credit, command)
+command = "credit.loc[(credit['STATUS'] == '3' )| (credit['STATUS'] == '4' )| (credit['STATUS'] == '5'), 'status'] = 1"
+morethan90 = calculate_observe(credit, command)
+command = "credit.loc[(credit['STATUS'] == '4' )| (credit['STATUS'] == '5'), 'status'] = 1"
+morethan120 = calculate_observe(credit, command)
+command = "credit.loc[(credit['STATUS'] == '5'), 'status'] = 1"
+morethan150 = calculate_observe(credit, command)
+
+obslst = pd.DataFrame({'past due more than 30 days': morethan30,
+                       'past due more than 60 days': morethan60,
+                       'past due more than 90 days': morethan90,
+                       'past due more than 120 days': morethan120,
+                       'past due more than 150 days': morethan150
+                        })
+
+obslst.plot(grid = True, title = 'Cumulative % of Bad Customers Analysis')
+plt.xlabel('Months on Books')
+plt.ylabel('Cumulative %')
+plt.savefig('obslst.png')
+
