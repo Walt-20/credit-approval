@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import mean_absolute_error, f1_score, accuracy_score
 from sklearn.preprocessing import OneHotEncoder
+import xgboost as xgb
 
 import numpy as np
 import pandas as pd
@@ -32,13 +33,30 @@ x_train_combined = pd.concat([pd.DataFrame(x_train_encoded, columns=encoder.get_
 x_test_combined = pd.concat([pd.DataFrame(x_test_encoded, columns=encoder.get_feature_names_out(categorical_features.columns)), x_test.select_dtypes(include=['number']).reset_index(drop=True)], axis=1)
 
 model = LogisticRegression(max_iter=30000)
+modelXG = xgb.XGBClassifier(objective="binary:logistic", random_state=42)
 
 model.fit(x_train_combined, y_train)
+modelXG.fit(x_train_combined, y_train)
+
 pred = model.predict(x_test_combined)
+predXG = modelXG.predict(x_test_combined)
 
 mae = mean_absolute_error(y_test, pred)
 f1 = f1_score(y_test, pred)
 accuracy = accuracy_score(y_test, pred)
+print('=========== Logistic Regression Model ===========')
 print('Mean Absolute Error (MAE): ' + str(mae))
 print('F1 Score: ' + str(f1))
 print('Accuracy is: ' + str(accuracy))
+print('=========== End of Logistic Regression Model ===========')
+print(*3*['\n'])
+
+print('=========== XGBoost Model ===========')
+maeXG = mean_absolute_error(y_test, predXG)
+f1XG = f1_score(y_test, predXG)
+accuracyXG = accuracy_score(y_test, predXG)
+print('Mean Absolute Error (MAE): ' + str(maeXG))
+print('F1 Score: ' + str(f1XG))
+print('Accuracy is: ' + str(accuracyXG))
+print('=========== End of XGBoost Model ===========')
+
