@@ -3,7 +3,7 @@
   We used two different models, Logistic Regression and XGBoost Classifier.
 
 # To Run
-  In order to run the code you will need
+  In order to run the code you will need  
     -numpy  
     -pandas  
     -sklearn  
